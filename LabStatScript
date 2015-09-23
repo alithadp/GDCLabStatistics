@@ -1,0 +1,387 @@
+"""
+Author: Alitha Partono
+Date Updated: 6/22/2015
+
+This is a script that takes a CSV file with information from the GDC Google
+calendar and process the information into a CSV file with information on
+hourly patron statistics.
+
+Required: a CSV file in the same folder as the script file.
+Results: a new (or existing but overwritten) CSV file in the same folder as
+the script file.
+"""
+import numpy
+import xlsxwriter
+import csv
+import datetime
+
+def getEmptyMatrix():
+    matrix = []
+    for i in range(0, 10):
+        row = [0] * 7
+        if i == 0:
+            row[0] = "Open"
+        elif i == 9:
+            row[0] = "Close"
+        elif i > 4:
+            row[0] = i - 4
+        else:
+            row[0] = i + 8
+            
+        matrix.append(row)
+
+    return matrix
+
+def calculateTotals(matrix):
+    for x in range(0, len(matrix)):
+        matrix[x][6] = sum(matrix[x][1:])
+
+def calculateNumberOfDays(date1, date2):
+    f = open("OffDays.csv", 'rt')
+    off_days = []
+    try:
+        reader = csv.reader(f)
+        for row in reader:
+            date_split = row[1].split("/")
+            new_date = datetime.date(
+                int(date_split[2]), int(date_split[0]), int(date_split[1]))
+            off_days.append(new_date)
+    finally:
+        f.close()
+    
+    days = [0] * 5
+    date1_split = date1.split("/")
+    date2_split = date2.split("/")
+    my_date = datetime.date(
+        int(date1_split[2]), int(date1_split[0]), int(date1_split[1]))
+    last_date = datetime.date(
+        int(date2_split[2]), int(date2_split[0]), int(date2_split[1]))
+    while my_date <= last_date:
+        if my_date.weekday() < 5 and my_date not in off_days:
+            days[my_date.weekday()] += 1
+        my_date += datetime.timedelta(days=1)
+
+    days.append(sum(days))
+
+    return days
+
+def getMainTitleFormat(workbook):
+    return workbook.add_format({'align': 'center', 'bold': True, 'font_size': 10, 'font_color': 'white', 'bg_color': 'gray', 'border': 1, 'border_color': 'gray'})
+
+def getTableTitleFormat(workbook):
+    return workbook.add_format({'align': 'center', 'bold': True, 'font_size': 10, 'font_color': 'white', 'bg_color': '#999999', 'border': 1, 'border_color': 'gray'})
+
+def getTimeTitleFormat(workbook):
+    return workbook.add_format({'align': 'center', 'bold': True, 'font_size': 10,'bg_color': '#CCCCCC', 'border': 1, 'border_color': 'gray'})
+
+def getCenterFormat(workbook):
+    return workbook.add_format({'align': 'center', 'font_size': 10, 'border': 1, 'border_color': 'gray'})
+
+def writeRepeatedly(worksheet, length, to_add, row, my_format):
+    row += 1
+    col = 0
+    i = 0
+
+    while col < length:
+        if i >= len(to_add):
+            i = 0
+        try:
+            int(to_add[i])
+        except ValueError:
+            worksheet.write(row, col, to_add[i], my_format)
+        else:
+            worksheet.write(row, col, int(to_add[i]), my_format)
+        i += 1
+        col += 1
+
+    return row
+
+def writeMatrix(workbook, worksheet, to_add, row):
+    row += 1
+    col = 0
+    
+    for i in range(0, len(to_add)):
+        for col in range(0, len(to_add[i])):
+            if col == 0 or col % 7 == 0:
+                myformat = getTimeTitleFormat(workbook)
+            else:
+                myformat = getCenterFormat(workbook)
+            try:
+                float(to_add[i][col])
+            except ValueError:
+                worksheet.write(row, col, to_add[i][col], myformat)
+            else:
+                worksheet.write(row, col, float(to_add[i][col]), myformat)
+            col += 1
+        row += 1
+        
+    return row - 1
+
+def writeTitles(workbook, worksheet, table_titles, row):
+    row += 1
+    col = 0
+    
+    for i in range(0, len(table_titles)):
+        worksheet.merge_range(row, col, row, col + 6, table_titles[i], getTableTitleFormat(workbook))
+        col += 7
+    
+    return row
+
+def main():
+    title = ["", "Mon", "Tue", "Wed", "Thu", "Fri", "All"]
+
+    # Open CSV file
+    f = open("Summer2015.csv", 'rt')
+    patron_times = []
+    try:
+        reader = csv.reader(f)
+        for row in reader:
+            # Creates a row with start time, end time, date, and day
+            patron_times.append([int(row[1]), int(row[2]), row[3], row[4]])
+    finally:
+        f.close()
+
+    # Get number of each day within this period of time
+    total_days = calculateNumberOfDays(
+        patron_times[0][2], patron_times[len(patron_times)-1][2])
+    
+    # Number of patron arrivals
+    arrivals = getEmptyMatrix()
+
+    for entry in patron_times:
+        column_idx = title.index(entry[3])
+        if entry[0] < 9:
+            arrivals[0][column_idx] += 1
+        elif entry[0] > 16:
+            arrivals[9][column_idx] += 1
+        else:
+            arrivals[entry[0] - 8][column_idx] += 1
+
+    calculateTotals(arrivals)
+
+    print arrivals
+
+    # Number of days with patron arrivals
+    arrival_days = getEmptyMatrix()
+    time_and_date = []
+
+    for entry in patron_times:
+        if (entry[0], entry[2]) not in time_and_date:
+            arrival_days[entry[0] - 8][title.index(entry[3])] += 1
+            time_and_date.append((entry[0], entry[2]))
+
+    calculateTotals(arrival_days)
+        
+    print arrival_days
+
+    # Number of patrons present
+    patron_count = getEmptyMatrix()
+
+    for entry in patron_times:
+        column_idx = title.index(entry[3])
+        for i in range(entry[0], entry[1] + 1):
+            if i < 9:
+                patron_count[0][column_idx] += 1
+            elif i > 16:
+                patron_count[9][column_idx] += 1
+            else:
+                patron_count[i - 8][column_idx] += 1
+
+    calculateTotals(patron_count)
+
+    print patron_count
+
+    # Number of days with patrons present
+    patron_days = getEmptyMatrix()
+    time_and_date = []
+
+    for entry in patron_times:
+        for i in range(entry[0], entry[1] + 1):
+            if (i, entry[2]) not in time_and_date:
+                patron_days[i - 8][title.index(entry[3])] += 1
+                time_and_date.append((i, entry[2]))
+
+    calculateTotals(patron_days)
+
+    print patron_days
+
+    # Average number of patron arrivals
+    avg_arrivals = getEmptyMatrix()
+
+    for time in range(0, len(arrivals)):
+        for day in range(1, len(arrivals[time])):
+            avg_arrivals[time][day] = round(float(arrivals[time][day]) / total_days[day-1], 1)
+
+    print avg_arrivals
+
+    # Percent of days with patron arrivals
+    percent_arrivals = getEmptyMatrix()
+
+    for time in range(0, len(arrival_days)):
+        for day in range(1, len(arrival_days[time])):
+            percent_arrivals[time][day] = round(float(arrival_days[time][day]) / total_days[day-1], 2)
+
+    print percent_arrivals
+
+    # Average number of patrons present
+    avg_patrons = getEmptyMatrix()
+
+    for time in range(0, len(patron_count)):
+        for day in range(1, len(patron_count[time])):
+            avg_patrons[time][day] = round(float(patron_count[time][day]) / total_days[day-1], 1)
+
+    print avg_patrons
+
+    # Percent of days with patrons present
+    percent_patrons = getEmptyMatrix()
+
+    for time in range(0, len(patron_days)):
+        for day in range(1, len(patron_days[time])):
+            percent_patrons[time][day] = round(float(patron_days[time][day]) / total_days[day-1], 2)
+
+    print percent_patrons
+
+    # Number of arrivals at each time & day
+    arrivals_count = {}
+
+    for entry in patron_times:
+        key = str([entry[2], entry[0]])
+        if key in arrivals_count:
+            arrivals_count[key][2] += 1
+        else:
+            arrivals_count[key] = [title.index(entry[3]), entry[0], 1]
+
+    print arrivals_count
+
+    # Max number of patron arrivals
+    max_arrivals = getEmptyMatrix()
+    for key in arrivals_count:
+        if arrivals_count[key][2] > max_arrivals[arrivals_count[key][1] - 8][arrivals_count[key][0]]:
+            max_arrivals[arrivals_count[key][1] - 8][arrivals_count[key][0]] = arrivals_count[key][2]
+
+    overall_max = [0] * 7
+    overall_max[0] = "Day"
+    for row in max_arrivals:
+        row[6] = max(row[1:6])
+        for i in range(1, 7):
+            if row[i] > overall_max[i]:
+                overall_max[i] = row[i]
+
+    max_arrivals.append(overall_max)
+    print max_arrivals
+
+    # Number of days with 3+ patron arrivals
+    three_plus_arrivals = getEmptyMatrix()
+    three_plus_days = [0] * 7
+    three_plus_days[0] = "Days"
+    dates_recorded = []
+
+    for key in arrivals_count:
+        if key not in dates_recorded:
+            if arrivals_count[key][2] >= 3:
+                dates_recorded.append(key)
+                three_plus_arrivals[arrivals_count[key][1] - 8][arrivals_count[key][0]] += 1
+                three_plus_days[arrivals_count[key][0]] += 1
+
+    three_plus_arrivals.append(three_plus_days)
+    calculateTotals(three_plus_arrivals)
+
+    print three_plus_arrivals
+
+    # Number of patrons present at each time & day
+    presence_count = {}
+
+    for entry in patron_times:
+        for i in range(entry[0], entry[1]):
+            if str([entry[2], i]) in presence_count:
+                presence_count[str([entry[2], i])][2] += 1
+            else:
+                presence_count[str([entry[2], i])] = [title.index(entry[3]), i, 1]
+                
+    print presence_count
+
+    # Max number of patrons present
+    max_patrons = getEmptyMatrix()
+    for key in presence_count:
+        if presence_count[key][2] > max_patrons[presence_count[key][1] - 8][presence_count[key][0]]:
+            max_patrons[presence_count[key][1] - 8][presence_count[key][0]] = presence_count[key][2]
+
+    overall_max = [0] * 7
+    overall_max[0] = "Day"
+    for row in max_patrons:
+        row[6] = max(row[1:6])
+        for i in range(1, 7):
+            if row[i] > overall_max[i]:
+                overall_max[i] = row[i]
+
+    max_patrons.append(overall_max)
+    print max_patrons
+
+    # Number of days with 6+ patron present
+    six_plus_patrons = getEmptyMatrix()
+    six_plus_days = [0] * 7
+    six_plus_days[0] = "Days"
+    dates_recorded = []
+
+    for key in presence_count:
+        if key not in dates_recorded:
+            if presence_count[key][2] >= 6:
+                dates_recorded.append(key)
+                six_plus_patrons[presence_count[key][1] - 8][presence_count[key][0]] += 1
+                six_plus_days[presence_count[key][0]] += 1
+
+    six_plus_patrons.append(six_plus_days)
+    calculateTotals(six_plus_patrons)
+    
+    print six_plus_patrons
+
+    total_counts = numpy.hstack([arrivals, arrival_days, patron_count, patron_days]).tolist()
+    stats1 = numpy.hstack([avg_arrivals, percent_arrivals, avg_patrons, percent_patrons]).tolist()
+    stats2 = numpy.hstack([max_arrivals, three_plus_arrivals, max_patrons, six_plus_patrons]).tolist()
+    
+    # write to an excel file
+    workbook = xlsxwriter.Workbook('LabStatistics.xlsx')
+    worksheet = workbook.add_worksheet()
+
+    row = 0
+    worksheet.merge_range(row, 0, row, len(total_counts[0]) - 1, "TOTAL PATRON COUNTS", getMainTitleFormat(workbook))
+
+    table_titles = ["Number of Patron Arrivals", "Days with Patron Arrivals", "Number of Patrons Present", "Days with Patrons Present"]
+    row = writeTitles(workbook, worksheet, table_titles, row)
+    row = writeRepeatedly(worksheet, len(total_counts[0]), title, row, getTimeTitleFormat(workbook))
+    row = writeMatrix(workbook, worksheet, total_counts, row)
+    row = writeRepeatedly(worksheet, len(total_counts[0]), ['Days'] + total_days, row, getCenterFormat(workbook))
+
+    row += 1
+    worksheet.merge_range(row, 0, row, len(total_counts[0]) - 1, "SUMMARY STATISTICS", getMainTitleFormat(workbook))
+
+    table_titles = ["Average # of Patron Arrivals", "% of Days with Patron Arrivals", "Average # of Patrons Present",
+                    "% of Days with Patrons Present"]
+    row = writeTitles(workbook, worksheet, table_titles, row)
+    row = writeRepeatedly(worksheet, len(total_counts[0]), title, row, getTimeTitleFormat(workbook))
+    row = writeMatrix(workbook, worksheet, stats1, row)
+
+    table_titles = ["Max # of Patron Arrivals", "# of Days with 3+ Patron Arrivals", "Max # of Patrons Present",
+                    "# of Days with 6+ Patrons"]
+    row = writeTitles(workbook, worksheet, table_titles, row)
+    row = writeRepeatedly(worksheet, len(total_counts[0]), title, row, getTimeTitleFormat(workbook))
+    row = writeMatrix(workbook, worksheet, stats2, row)
+
+    worksheet.conditional_format('B4:F14', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    worksheet.conditional_format('I4:M14', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    worksheet.conditional_format('P4:T14', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    worksheet.conditional_format('W4:AA14', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    worksheet.conditional_format('B18:G29', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    worksheet.conditional_format('I18:N29', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    worksheet.conditional_format('P18:U29', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    worksheet.conditional_format('W18:AB29', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    worksheet.conditional_format('B30:G43', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    worksheet.conditional_format('I30:N43', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    worksheet.conditional_format('P30:U43', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    worksheet.conditional_format('W30:AB43', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    
+    workbook.close()
+
+if  __name__ =='__main__':
+    main()
+

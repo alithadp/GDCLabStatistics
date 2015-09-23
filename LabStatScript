@@ -1,13 +1,13 @@
 """
-Author: Alitha Partono
-Date Updated: 6/22/2015
-
 This is a script that takes a CSV file with information from the GDC Google
-calendar and process the information into a CSV file with information on
-hourly patron statistics.
+calendar and processes the information into an Excel file with formatting
+that visualizes hourly patron statistics.
+
+This script uses XlsxWriter (https://github.com/jmcnamara/XlsxWriter) to
+format the resulting CSV file.
 
 Required: a CSV file in the same folder as the script file.
-Results: a new (or existing but overwritten) CSV file in the same folder as
+Results: a new (or existing but overwritten) Excel file in the same folder as
 the script file.
 """
 import numpy
@@ -15,6 +15,11 @@ import xlsxwriter
 import csv
 import datetime
 
+"""
+Get a new empty matrix with the right dimensions.
+Returns: an matrix with the first column containing
+GDC lab opening hours.
+"""
 def getEmptyMatrix():
     matrix = []
     for i in range(0, 10):
@@ -32,10 +37,17 @@ def getEmptyMatrix():
 
     return matrix
 
+"""
+Calculate a total of each row and store the sum in the last column.
+"""
 def calculateTotals(matrix):
     for x in range(0, len(matrix)):
         matrix[x][6] = sum(matrix[x][1:])
 
+"""
+Count number of each weekday for this time period and store them in
+the last row.
+"""
 def calculateNumberOfDays(date1, date2):
     f = open("OffDays.csv", 'rt')
     off_days = []
@@ -65,6 +77,9 @@ def calculateNumberOfDays(date1, date2):
 
     return days
 
+"""
+The next four are preset formats for different parts of the tables.
+"""
 def getMainTitleFormat(workbook):
     return workbook.add_format({'align': 'center', 'bold': True, 'font_size': 10, 'font_color': 'white', 'bg_color': 'gray', 'border': 1, 'border_color': 'gray'})
 
@@ -77,6 +92,9 @@ def getTimeTitleFormat(workbook):
 def getCenterFormat(workbook):
     return workbook.add_format({'align': 'center', 'font_size': 10, 'border': 1, 'border_color': 'gray'})
 
+"""
+Write headers to Excel worksheet.
+"""
 def writeRepeatedly(worksheet, length, to_add, row, my_format):
     row += 1
     col = 0
@@ -96,6 +114,9 @@ def writeRepeatedly(worksheet, length, to_add, row, my_format):
 
     return row
 
+"""
+Write matrix to worksheet.
+"""
 def writeMatrix(workbook, worksheet, to_add, row):
     row += 1
     col = 0
@@ -117,6 +138,9 @@ def writeMatrix(workbook, worksheet, to_add, row):
         
     return row - 1
 
+"""
+Write titles to worksheet.
+"""
 def writeTitles(workbook, worksheet, table_titles, row):
     row += 1
     col = 0
@@ -127,6 +151,9 @@ def writeTitles(workbook, worksheet, table_titles, row):
     
     return row
 
+"""
+Main function processes the data.
+"""
 def main():
     title = ["", "Mon", "Tue", "Wed", "Thu", "Fri", "All"]
 

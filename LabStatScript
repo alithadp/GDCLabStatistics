@@ -21,20 +21,21 @@ Returns: an matrix with the first column containing
 GDC lab opening hours.
 """
 def getEmptyMatrix():
+    numrows = closetime - opentime + 2
+    hour = opentime
     matrix = []
-    for i in range(0, 10):
+    for i in range(0, numrows):
         row = [0] * 7
         if i == 0:
             row[0] = "Open"
-        elif i == 9:
+        elif i == numrows - 1:
             row[0] = "Close"
-        elif i > 4:
-            row[0] = i - 4
         else:
-            row[0] = i + 8
-            
+            row[0] = hour
+            hour++
+            if hour == 13:
+                hour = 1
         matrix.append(row)
-
     return matrix
 
 """
@@ -410,5 +411,10 @@ def main():
     workbook.close()
 
 if  __name__ =='__main__':
-    main()
+    if len(sys.argv) > 2:
+        global opentime = argv[1]
+        global closetime = argv[2]
+        main()
+    else:
+        print "Error: please enter the right number of arguments. (arg1 = opentime, arg2 = closetime)"
 

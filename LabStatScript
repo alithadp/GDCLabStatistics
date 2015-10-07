@@ -14,6 +14,7 @@ import numpy
 import xlsxwriter
 import csv
 import datetime
+import sys
 
 """
 Get a new empty matrix with the right dimensions.
@@ -32,7 +33,7 @@ def getEmptyMatrix():
             row[0] = "Close"
         else:
             row[0] = hour
-            hour++
+            hour += 1
             if hour == 13:
                 hour = 1
         matrix.append(row)
@@ -50,7 +51,7 @@ Count number of each weekday for this time period and store them in
 the last row.
 """
 def calculateNumberOfDays(date1, date2):
-    f = open("OffDays.csv", 'rt')
+    f = open("GoogleCalendar/OffDays.csv", 'rt')
     off_days = []
     try:
         reader = csv.reader(f)
@@ -155,11 +156,11 @@ def writeTitles(workbook, worksheet, table_titles, row):
 """
 Main function processes the data.
 """
-def main():
+def main(inputfile):
     title = ["", "Mon", "Tue", "Wed", "Thu", "Fri", "All"]
 
     # Open CSV file
-    f = open("Summer2015.csv", 'rt')
+    f = open(inputfile, 'rt')
     patron_times = []
     try:
         reader = csv.reader(f)
@@ -178,12 +179,12 @@ def main():
 
     for entry in patron_times:
         column_idx = title.index(entry[3])
-        if entry[0] < 9:
+        if entry[0] < opentime:
             arrivals[0][column_idx] += 1
-        elif entry[0] > 16:
-            arrivals[9][column_idx] += 1
+        elif entry[0] > closetime + 11:
+            arrivals[len(arrivals) - 1][column_idx] += 1
         else:
-            arrivals[entry[0] - 8][column_idx] += 1
+            arrivals[entry[0] - opentime + 1][column_idx] += 1
 
     calculateTotals(arrivals)
 
@@ -195,7 +196,7 @@ def main():
 
     for entry in patron_times:
         if (entry[0], entry[2]) not in time_and_date:
-            arrival_days[entry[0] - 8][title.index(entry[3])] += 1
+            arrival_days[entry[0] - opentime + 1][title.index(entry[3])] += 1
             time_and_date.append((entry[0], entry[2]))
 
     calculateTotals(arrival_days)
@@ -208,12 +209,12 @@ def main():
     for entry in patron_times:
         column_idx = title.index(entry[3])
         for i in range(entry[0], entry[1] + 1):
-            if i < 9:
+            if i < opentime:
                 patron_count[0][column_idx] += 1
-            elif i > 16:
-                patron_count[9][column_idx] += 1
+            elif i > closetime + 11:
+                patron_count[len(patron_count) - 1][column_idx] += 1
             else:
-                patron_count[i - 8][column_idx] += 1
+                patron_count[i - opentime + 1][column_idx] += 1
 
     calculateTotals(patron_count)
 
@@ -226,7 +227,7 @@ def main():
     for entry in patron_times:
         for i in range(entry[0], entry[1] + 1):
             if (i, entry[2]) not in time_and_date:
-                patron_days[i - 8][title.index(entry[3])] += 1
+                patron_days[i - opentime + 1][title.index(entry[3])] += 1
                 time_and_date.append((i, entry[2]))
 
     calculateTotals(patron_days)
@@ -411,10 +412,11 @@ def main():
     workbook.close()
 
 if  __name__ =='__main__':
-    if len(sys.argv) > 2:
-        global opentime = argv[1]
-        global closetime = argv[2]
-        main()
+    if len(sys.argv) > 3:
+        global opentime, closetime, inputfile
+        opentime = int(sys.argv[2])
+        closetime = int(sys.argv[3])
+        
+        main(sys.argv[1])
     else:
         print "Error: please enter the right number of arguments. (arg1 = opentime, arg2 = closetime)"
-

@@ -22,7 +22,7 @@ Returns: an matrix with the first column containing
 GDC lab opening hours.
 """
 def getEmptyMatrix():
-    numrows = closetime - opentime + 2
+    numrows = closetime + 12 - opentime + 2
     hour = opentime
     matrix = []
     for i in range(0, numrows):
@@ -176,6 +176,7 @@ def main(inputfile):
     
     # Number of patron arrivals
     arrivals = getEmptyMatrix()
+    print arrivals
 
     for entry in patron_times:
         column_idx = title.index(entry[3])
@@ -416,7 +417,6 @@ if  __name__ =='__main__':
         global opentime, closetime, inputfile
         opentime = int(sys.argv[2])
         closetime = int(sys.argv[3])
-        
         main(sys.argv[1])
     else:
-        print "Error: please enter the right number of arguments. (arg1 = opentime, arg2 = closetime)"
+        print "Error: please enter the right number of arguments. (arg1 = filename, arg2 = opentime, arg3 = closetime)"

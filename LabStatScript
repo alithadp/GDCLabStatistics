@@ -397,18 +397,20 @@ def main(inputfile):
     row = writeRepeatedly(worksheet, len(total_counts[0]), title, row, getTimeTitleFormat(workbook))
     row = writeMatrix(workbook, worksheet, stats2, row)
 
-    worksheet.conditional_format('B4:F14', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
-    worksheet.conditional_format('I4:M14', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
-    worksheet.conditional_format('P4:T14', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
-    worksheet.conditional_format('W4:AA14', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
-    worksheet.conditional_format('B18:G29', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
-    worksheet.conditional_format('I18:N29', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
-    worksheet.conditional_format('P18:U29', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
-    worksheet.conditional_format('W18:AB29', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
-    worksheet.conditional_format('B30:G43', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
-    worksheet.conditional_format('I30:N43', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
-    worksheet.conditional_format('P30:U43', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
-    worksheet.conditional_format('W30:AB43', {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    numrows = closetime + 12 - opentime + 1
+    
+    worksheet.conditional_format('B4:F' + str(numrows + 4), {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    worksheet.conditional_format('I4:M' + str(numrows + 4), {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    worksheet.conditional_format('P4:T' + str(numrows + 4), {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    worksheet.conditional_format('W4:AA' + str(numrows + 4), {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    worksheet.conditional_format('B' + str(numrows + 9) + ':G' + str(2 * numrows + 9), {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    worksheet.conditional_format('I' + str(numrows + 9) + ':N' + str(2 * numrows + 9), {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    worksheet.conditional_format('P' + str(numrows + 9) + ':U' + str(2 * numrows + 9), {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    worksheet.conditional_format('W' + str(numrows + 9) + ':AB' + str(2 * numrows + 9), {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    worksheet.conditional_format('B' + str(2 * numrows + 12) + ':G' + str(3 * numrows + 13), {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    worksheet.conditional_format('I' + str(2 * numrows + 12) + ':N' + str(3 * numrows + 13), {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    worksheet.conditional_format('P' + str(2 * numrows + 12) + ':U' + str(3 * numrows + 13), {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
+    worksheet.conditional_format('W' + str(2 * numrows + 12) + ':AB' + str(3 * numrows + 13), {'type': '2_color_scale', 'min_color': '#47A375', 'max_color': '#FFFF99'})
     
     workbook.close()
 

@@ -380,8 +380,27 @@ def main(inputfile):
     row = writeTitles(workbook, worksheet, table_titles, row)
     row = writeRepeatedly(worksheet, len(total_counts[0]), title, row, getTimeTitleFormat(workbook))
     row = writeMatrix(workbook, worksheet, total_counts, row)
-    row = writeRepeatedly(worksheet, len(total_counts[0]), ['Days'] + total_days, row, getCenterFormat(workbook))
 
+    row += 1
+    worksheet.write(row, 0, 'Days', getTimeTitleFormat(workbook))
+    # row = writeRepeatedly(worksheet, len(total_counts[0]), ['Days'] + total_days, row, getCenterFormat(workbook))
+    col = 1
+    i = 0
+    my_format = getCenterFormat(workbook)
+    while col < len(total_counts[0]):
+        if i >= len(total_days):
+            worksheet.write(row, col, 'Days', getTimeTitleFormat(workbook))
+            i = 0
+            col += 1
+        try:
+            int(total_days[i])
+        except ValueError:
+            worksheet.write(row, col, total_days[i], my_format)
+        else:
+            worksheet.write(row, col, int(total_days[i]), my_format)
+        i += 1
+        col += 1
+        
     row += 1
     worksheet.merge_range(row, 0, row, len(total_counts[0]) - 1, "SUMMARY STATISTICS", getMainTitleFormat(workbook))
 
@@ -416,9 +435,9 @@ def main(inputfile):
 
 if  __name__ =='__main__':
     if len(sys.argv) > 3:
-        global opentime, closetime, inputfile
+        global opentime, closetime
         opentime = int(sys.argv[2])
         closetime = int(sys.argv[3])
         main(sys.argv[1])
     else:
-        print "Error: please enter the right number of arguments. (arg1 = filename, arg2 = opentime, arg3 = closetime)"
+        print "Error: please enter the right number of arguments. (arg1 = relative file path, arg2 = opentime, arg3 = closetime)"
